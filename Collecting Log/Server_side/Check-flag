@@ -1,0 +1,9 @@
+#!/bin/bash
+#This script will check the flag is existing or not;
+#Run on server side.
+DIRECTORY='/opt/mmonit-2.4/'
+if [ find ${DIRECTORY} -maxdepth 1  -type d | xargs -I currentDir -t find currentDir/collect-log ]
+then
+	echo "flag found!"
+fi
+

@@ -1,0 +1,97 @@
+#!/usr/bin/python
+#This script will update google spreadsheet with led value from m/monit server json response
+import sys
+import json
+import urllib2
+import os
+from datetime import datetime
+from subprocess import Popen
+import gdata.docs.service
+import gdata.spreadsheet.service
+import gdata.spreadsheets.data
+#
+date = str(datetime.now())
+
+#----read json from url
+def get_json(url):
+
+    try:
+        #url = "http://mmonit.vyoma-media.com:8080/status/hosts/list"
+        data = urllib2.urlopen(url).read()
+        data = json.loads(data)
+        return data
+    except:
+    #print "server busy or not responding!"
+        with open('dashboard.log','a') as f:
+            f.write(date)
+            f.write(' server not responding or no host data avilable!\n')
+            f.close()  
+            quit()
+#
+#------ read from local file
+#json_file = open('Formatted-mmonit.json')
+#data = json.load(json_file)
+#json_file.close()
+# print data
+#
+#---dict for store led values(eg:0,1,2,3)
+def update_sheet(data):
+    dict_led = {}
+    dict_status = {}
+    for record in data['records']:
+        store = record['hostname']
+        dict_led[store] = record['led']
+        dict_status[store] = record['status']
+#print dict_status
+#--email and pwd
+    email = 'mahesh@vyoma-media.in'
+    password = 'yokoma2012'
+    spreadsheet_key = '0Ap1cvRKx4murdG5uQkFuR2lpNC1lN3BCeU8xT1F5UGc'
+    spreadsheet_key_status = '0Ap1cvRKx4murdG5uQkFuR2lpNC1lN3BCeU8xT1F5UGc'
+    worksheet_id = 'od6'
+    worksheet_id_status = 'ocz'
+#
+    spr_client = gdata.spreadsheet.service.SpreadsheetsService()
+    spr_client.email = email
+    spr_client.password = password
+    spr_client.source = 'dev'
+    spr_client.ProgrammaticLogin()
+    #hostname data
+    host_dict = {'KaCity0Plasma': {'row':7,'col':5,'rows':8,'cols':3},'KaCantoPlasma': {'row':16,'col':5,'rows':24,'cols':3},
+             'KaCity0UtsF0001': {'row':7,'col':6,'rows':9,'cols':3},'KaCantoUtsB0002': {'row':16,'col':7,'rows':25,'cols':3},
+             'KaCity0UtsF0002': {'row':7,'col':7,'rows':10,'cols':3},'KaCantoUtsB0003': {'row':16,'col':8,'rows':26,'cols':3},
+             'KaCity0UtsF0003': {'row':7,'col':8,'rows':11,'cols':3},'KaCantoUtsB0004': {'row':16,'col':9,'rows':27,'cols':3},
+             'KaCity0UtsF0004': {'row':7,'col':9,'rows':12,'cols':3},'KaCantoUtsB0005': {'row':16,'col':10,'rows':28,'cols':3},
+             'KaCity0UtsF0005': {'row':7,'col':10,'rows':13,'cols':3},
+             'KaCity0UtsF0006': {'row':7,'col':11,'rows':14,'cols':3},
+             'KaCity0UtsF0007': {'row':7,'col':12,'rows':15,'cols':3},
+             'KaCity0UtsF0008': {'row':7,'col':13,'rows':16,'cols':3},
+             'KaCity0UtsF0009': {'row':7,'col':14,'rows':17,'cols':3},
+             'KaCity0UtsF0010': {'row':7,'col':15,'rows':18,'cols':3},
+             'KaCity0UtsF0011': {'row':7,'col':16,'rows':19,'cols':3},
+             'KaCity0UtsF0012': {'row':7,'col':17,'rows':20,'cols':3},
+            }
+    for key, value in host_dict.items():
+    #print  key, value
+        try:
+            led = unicode(dict_led[key])
+            status = dict_status[key]
+            row = unicode(value["row"])
+            col = unicode(value["col"])
+            rows = unicode(value["rows"])
+            cols = unicode(value["cols"])
+            #updating cell value
+            spr_client.UpdateCell(row, col, led,spreadsheet_key, worksheet_id)
+            spr_client.UpdateCell(rows, cols, status,spreadsheet_key_status, worksheet_id_status)
+            #print key, row, col
+        except:
+            print key," ,host not avilable on server!"
+    #logging, time UTC standerd.
+    with open('dashboard.log','a') as f:
+        f.write(date)
+        f.write(' sucessfully updated!\n')
+        f.close()
+#
+def main_loo():
+    data = get_json("http://mmonit.vyoma-media.com:8080/status/hosts/list")
+    update_sheet(data)

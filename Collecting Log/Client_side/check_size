@@ -1,0 +1,17 @@
+#!/bin/bash
+#1mb 1048576
+LOG_PATH="/mnt/logs"
+mkdir -p /mnt/logs/Remote_log
+for f in /mnt/logs/*.log
+do
+	size=`wc -c < ${f}`
+	if [ ${size} -ge 156 ]
+	then 	
+		tail -n 1000 ${f} >> ${f}.big
+		cp -Rav ${f}.big /mnt/logs/Remote_log
+		cat /dev/null > ${f}
+	else
+		cp -Rav ${f} /mnt/logs/Remote_log
+		
+	fi
+done

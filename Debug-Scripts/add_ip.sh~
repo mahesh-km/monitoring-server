@@ -1,0 +1,15 @@
+#!/bin/bash
+LOG="/opt/Debug/update-iptable.log"
+TIME=`date +%Y-%m-%d-%H-%M-%S`
+iptables -F
+iptables -I INPUT -p tcp -m tcp -s 127.0.0.1 --dport 10001 -j ACCEPT
+iptables -I INPUT -p tcp -m tcp -s 0.0.0.0/0 --dport 10001 -j DROP
+for IP in `cat /opt/Debug/ka_hostnames`
+do
+        address1=`host $IP | awk '{print $1}'`
+        address=`host $IP | awk '{print $4}'`
+        iptables -I INPUT -p tcp -m tcp -s $address --dport 10001 -j ACCEPT
+        echo $TIME $address1 $address "Added to iptable" | tee -a ${LOG}
+done
+echo "___________________________________________________________" | tee -a ${LOG}
+

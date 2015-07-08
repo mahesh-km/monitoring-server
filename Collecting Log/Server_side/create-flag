@@ -1,0 +1,17 @@
+#!/bin/bash
+#script for creating flags in all host;
+#Run in server side.
+DIRECTORY='/opt/ddis/logs'
+ACTION=1
+#if ACTION is 1 it create flag file ; if 0 it delete all flag files
+if [ ${ACTION} -eq 1 ]
+then
+	echo "creating fag"
+	find ${DIRECTORY} -maxdepth 1  -type d | xargs -I currentDir -t touch currentDir/collect-log
+elif [ ${ACTION} -eq 0 ]
+then 
+	find ${DIRECTORY} -maxdepth 1  -type d | xargs -I currentDir -t rm -rf currentDir/collect-log
+fi
+
+rm -rf ${DIRECTORY}/collect-log
+	

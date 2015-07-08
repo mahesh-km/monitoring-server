@@ -1,0 +1,49 @@
+#!/bin/bash
+#script for collecting log from local systems to the server;
+#Run in host machines.
+LOG_PATH="/mnt/logs"
+LOG="/mnt/logs/log-to-server.log"
+DATE=`date +%d-%m-%Y`
+TIME=`date +%H:%M:%S`
+TIME_STAMP=`date +%Y-%m-%d-%H-%M-%S`
+#TIME_STAMP=`date +%d%m%Y%m%s`
+NAME=`hostname`
+RSYNC_OPTIONS="-razv"
+DESTINATION=${NAME}/${TIME_STAMP}
+RSYNC_DEST="mahesh@mmonit.vyoma-media.com:/opt/ddis/logs/${DESTINATION}"
+HOST_FOLDER="/opt/ddis/logs/${NAME}"
+FLAG_CHECK="/opt/ddis/logs/${NAME}/collect-log"
+BASE_PATH="/home/vyoma/pads/indavest/vyoma"
+echo "Attempt for log collection "${TIME_STAMP} | tee -a ${LOG}
+#checking for [hostname] folder.if not found , will create .
+ssh -p 2222 mahesh@mmonit.vyoma-media.com -i /root/.ssh/ssh-key 'HOST_FOLDER="'"$HOST_FOLDER"'"; test -d "$HOST_FOLDER" || mkdir -p "$HOST_FOLDER"' | tee -a ${LOG}
+#checking for flag file is existing inside the host folder.
+ssh -p 2222 mahesh@mmonit.vyoma-media.com -i /root/.ssh/ssh-key "ls $FLAG_CHECK"
+if [ $? -eq 0 ]
+then 	
+	#create a temp folder.
+	mkdir -p /mnt/temp
+	cp -av /mnt/logs/*.log /mnt/temp	
+	#rsync log file to the host folder with timestamp.
+	rsync ${RSYNC_OPTIONS} /mnt/temp/ -e 'ssh -p 2222 -i /root/.ssh/ssh-key' ${RSYNC_DEST} | tee -a ${LOG}
+	#remove the flag file after log collection.
+	ssh -p 2222 mahesh@mmonit.vyoma-media.com -i /root/.ssh/ssh-key rm -rf ${FLAG_CHECK} | tee -a ${LOG}
+	#clearing log after log collection
+	rm -rf /mnt/temp
+	cat /dev/null > ${BASE_PATH}/logs/audit-screen1.log
+	cat /dev/null > ${BASE_PATH}/logs/audit-screen2.log
+	echo "" > /mnt/logs/system-uptime.log #clearing after log collected
+	echo "" > /mnt/logs/update.log #clearing after log collected
+	echo "" > /mnt/logs/log-to-server.log # clear after log collected
+else
+	echo "flag not exists or connection error!" | tee -a ${LOG}
+fi
+#end
+
+
+
+
+
+
+
+

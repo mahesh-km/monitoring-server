@@ -1,0 +1,165 @@
+#!/bin/bash
+echo -e "\a"
+LOG_FILE="/mnt/logs/auto-usb.log"
+echo $$
+echo "`date` $0 $1" | tee $LOG_FILE
+MOUNT_PATH=$1
+#changed for new directory structure ng
+
+UPDATE_FOLDER_USB="playlist/VTPLMedia"
+UPDATE_FOLDER_LOC="/mnt/playlist/VTPLMedia"
+
+BASE_PATH="/home/vyoma/pads/indavest/vyoma"
+DEST_FOLDER_CONFIG="${BASE_PATH}/.media"
+CONFIG_FOLDER="playlist/VTPLMedia/Config"
+
+MEDIA_FOLDER="playlist/VTPLMedia/Media"
+# remove indavest dependency ng 
+
+DEST_FOLDER_MEDIA="${BASE_PATH}/.media/"
+BIN_FOLDER="${BASE_PATH}/bin/"
+livecdmode=`cat /mnt/config/character/livecdmode`
+
+DATE=`date +%d-%m-%Y`
+TIME=`date +%H:%M:%S`
+OPLOG_FILE="/mnt/logs/system-uptime.log"
+PLY_UP="/mnt/logs/update.log" 
+TECH_NAME=`basename ${MOUNT_PATH}`
+UP_VER_NAME=`basename /mnt/playlist/VTPLMedia/Config/*.xml .xml`
+MEDIA_COUNT=`ls /mnt/playlist/VTPLMedia/Media/*.mpg | wc -l`
+MEDIA_SIZE=`ls -lh /mnt/playlist/VTPLMedia/Media/ | head -1 | cut -c7-`
+
+LOG_COLLECTION=`cat /mnt/config/character/log-collection`
+
+#changed for new directory structure ng
+
+RSYNC_OPTIONS="-rav --delete"
+
+function runme {
+
+	echo "check if there is a custom script, if yes then run it as well. Will be useful to update the files after install" | tee -a $LOG_FILE
+	if [ -f ${MOUNT_PATH}/runme.sh ]  
+	then
+		/bin/bash ${MOUNT_PATH}/runme.sh
+	fi
+}
+# will need change ng - add hostname to the log file 
+function collect_logs {
+	echo "Copying logs to USB." |tee -a ${LOG_FILE}
+	DATE_NOW=`date +%Y-%m-%d-%H-%M-%S`
+        NAME=`hostname`   
+	DEST_LOG_DIR=${MOUNT_PATH}/${NAME}-${DATE_NOW}
+	mkdir -p ${DEST_LOG_DIR}
+	cp -v ${BASE_PATH}/logs/audit* ${DEST_LOG_DIR} |tee -a ${LOG_FILE}
+	cat /dev/null > ${BASE_PATH}/logs/audit-screen1.log
+	cat /dev/null > ${BASE_PATH}/logs/audit-screen2.log
+	echo ${DATE} ${TIME} "Playlist Updated with Version: " ${UP_VER_NAME} ", By: "${TECH_NAME} ". Total Num. of Media Files= " ${MEDIA_COUNT} "and Size= " ${MEDIA_SIZE} "." > ${PLY_UP} # log for playlist updation
+	cp -v /mnt/logs/system-uptime.log ${DEST_LOG_DIR}/
+	cp -v /mnt/logs/update.log ${DEST_LOG_DIR}/
+
+	echo "Collected logs" | tee -a $LOG_FILE
+	cp -v /mnt/logs/auto-usb.log ${DEST_LOG_DIR}/
+
+	cat /dev/null > /mnt/logs/system-uptime.log #clearing after log collected
+	#echo "" > /mnt/logs/update.log #clearing after log collectected
+}
+
+echo "check for the right usb stick" | tee -a ${LOG_FILE}
+if [ ! -d  "${MOUNT_PATH}/${MEDIA_FOLDER}" ] || [ ! -d   "${MOUNT_PATH}/${CONFIG_FOLDER}" ]
+then 
+        echo "wrong usb, skip it. no need of doing any thing" | tee -a ${LOG_FILE}
+	runme
+	echo "unmonting"  | tee -a $LOG_FILE
+	umount "${MOUNT_PATH}"
+        exit -1 
+fi
+
+
+echo "stop the playlist player" | tee -a ${LOG_FILE}
+kill -9 `cat /home/vyoma/pads/indavest/vyoma/logs/play-ads-screen1.pid`
+kill -9 `cat /home/vyoma/pads/indavest/vyoma/logs/play-ads-screen2.pid`
+
+# need change for systemd ng Y
+echo "stopping monit for a while " | tee -a ${LOG_FILE}
+#/etc/rc.d/init.d/monit stop
+systemctl stop monit.service
+
+
+
+
+#
+#
+#
+echo "starting a full screen image to show that we are in the process of update " | tee -a ${LOG_FILE}
+########
+/usr/bin/xloadimage -display :0.0 -fullscreen /home/vyoma/pads/indavest/vyoma/images/usb-stick-vector.jpg & 
+/usr/bin/xloadimage -display :0.1 -fullscreen /home/vyoma/pads/indavest/vyoma/images/usb-stick-vector.jpg & 
+
+echo "rsyncing updates ${RSYNC_OPTIONS} ${MOUNT_PATH}/${UPDATE_FOLDER_USB}/ ${UPDATE_FOLDER_LOC}"  | tee -a ${LOG_FILE}
+rsync ${RSYNC_OPTIONS} "${MOUNT_PATH}/${UPDATE_FOLDER_USB}/" ${UPDATE_FOLDER_LOC}
+
+echo "removing old playlist.xml"  | tee -a ${LOG_FILE}
+sudo rm -f ${DEST_FOLDER_CONFIG}/*.xml
+# any xml will be converted to playlist.xml ( the best part is there will be only one xml in config file if all is well )
+
+echo " cp ${MOUNT_PATH}/${CONFIG_FOLDER}/*.xml ${DEST_FOLDER_CONFIG}/playlist.xml " | tee -a ${LOG_FILE}
+cp ${MOUNT_PATH}/${CONFIG_FOLDER}/*.xml ${DEST_FOLDER_CONFIG}/playlist.xml 
+
+
+if [ "$LOG_COLLECTION" == "local" ]
+then
+     echo "log collection config to local mode" | tee -a ${LOG_FILE}
+     collect_logs
+else
+     echo ${DATE} ${TIME} "Playlist Updated with Version: " ${UP_VER_NAME} ", By: "${TECH_NAME} ". Total Num. of Media Files= " ${MEDIA_COUNT} "and Size= " ${MEDIA_SIZE} "." > ${PLY_UP}
+     echo "log collection config to remote mode" | tee -a ${LOG_FILE}
+fi
+#
+runme
+
+
+
+echo "unmonting"  | tee -a $LOG_FILE
+umount "${MOUNT_PATH}"
+
+echo "delete all the symbolic link " | tee -a ${LOG_FILE}
+rm -rf ${BASE_PATH}/media/* 
+
+
+pkil-9 xloadimage
+
+/usr/bin/xloadimage -display :0.0 -fullscreen /home/vyoma/pads/indavest/vyoma/images/loading.jpg &
+/usr/bin/xloadimage -display :0.1 -fullscreen /home/vyoma/pads/indavest/vyoma/images/loading.jpg &
+
+
+echo "flattening the playlist, `pwd`" | tee -a $LOG_FILE
+
+if [ -f ${DEST_FOLDER_CONFIG}/playlist.xml ]
+then
+    if [ "$livecdmode" == "nonsync" ]
+    then
+        echo "flattering for nonsync mode" | tee -a $LOG_FILE
+	python ${BIN_FOLDER}/playlist-flattener.py  | tee -a ${LOG_FILE}
+    elif [ "$livecdmode" == "sync" ]
+    then
+        echo "flattering for sync mode" | tee -a $LOG_FILE
+        python ${BIN_FOLDER}/playlist-flattener_merger.py  | tee -a ${LOG_FILE}	
+    fi
+else
+   echo "ERROR:: missing playlist.xml" | tee -a ${LOG_FILE} 	    
+fi
+
+echo "starting monit again, stopping the xloadimage" | tee -a ${LOG_FILE}
+pkill -9 xloadimage
+
+# can load a different image to show completion of update
+
+#Add sucess image here
+
+
+# will need change for systemd ng Y
+#/etc/rc.d/init.d/monit start 
+chmod -R 755 /mnt/playlist
+systemctl start monit.service
+
+echo -e "\a\a\a"

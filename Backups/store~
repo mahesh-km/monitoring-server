@@ -1,0 +1,157 @@
+dict = {}
+dict['date'] = time.strftime('%m/%d/%Y')
+dict['time'] = time.strftime('%H:%M:%S')
+print dict
+
+##################################
+batch update
+----------------
+import gdata.spreadsheet
+import gdata.spreadsheet.service
+
+client = gdata.spreadsheet.service.SpreadsheetsService()
+# Authenticate ...
+
+cells = client.GetCellsFeed('your_spreadsheet_key', wksht_id='your_worksheet_id')
+
+batchRequest = gdata.spreadsheet.SpreadsheetsCellsFeed()
+
+cells.entry[0].cell.inputValue = 'x'
+batchRequest.AddUpdate(cells.entry[0])
+cells.entry[1].cell.inputValue = 'y'
+batchRequest.AddUpdate(cells.entry[1])
+cells.entry[2].cell.inputValue = 'z'
+batchRequest.AddUpdate(cells.entry[2])
+cells.entry[3].cell.inputValue = '=sum(3,5)'
+batchRequest.AddUpdate(cells.entry[3])
+----------------------------------------------------------------------------
+inserting Data 
+===============
+#
+#entry = spr_client.InsertRow(dict, spreadsheet_key, worksheet_id)
+#if isinstance(entry, gdata.spreadsheet.SpreadsheetsList):
+#    print "Row inserted"
+#else:
+#   print "insert failed!"
+#
+#
+---------------------------------------------------------------------------
+data reading from mmonit json
+=====================================
+
+for record in data['records']:
+  store1 = record['led']
+  store2 = record['hostname']
+  if ( store2 == 'KaCity0UtsF0001'):
+    dict['host'] = unicode(store2)
+dict['host1'] = unicode(store1)
+print dict
+-----------------------------------------------------------------------------
+read json from url
+========================
+#url = Popen(['curl', 'http://59.90.236.95:8080/status/hosts/list'])
+#url = "http://59.90.236.95:8080/status/hosts/list"
+# data = urllib2.urlopen(url).read()
+# data = json.loads(data)
+------------------------------------------------------------------------------
+backup
+=======
+P1 = dict1['KaCity0Plasma']
+C1 = dict1['KaCity0UtsF0001']
+C2 = dict1['KaCity0UtsF0002']
+C3 = dict1['KaCity0UtsF0003']
+C4 = dict1['KaCity0UtsF0004']
+C5 = dict1['KaCity0UtsF0005']
+C6 = dict1['KaCity0UtsF0006']
+C7 = dict1['KaCity0UtsF0007']
+C8 = dict1['KaCity0UtsF0008']
+C9 = dict1['KaCity0UtsF0009']
+C10 = dict1['KaCity0UtsF0010']
+C11 = dict1['KaCity0UtsF0011']
+C12 = dict1['KaCity0UtsF0012']
+C13 = dict1['KaCity0UtsF0013']
+
+
+s['P1'] = '2'
+s['C1'] = '3'
+s['C2'] = '4'
+-----------------------------------------------------------------------------------
+read line form file
+===========================
+with open("/media/HDD 500/Current_Working/Dashboard-App/LocalHost_db") as f:
+    host = f.readline()
+    print host
+#line = [line.strip() for line in open('/media/HDD 500/Current_Working/Dashboard-App/LocalHost_db')]
+#print line
+##
+#
+#
+with open("/media/HDD 500/Current_Working/Dashboard-App/LocalHost_db") as f:
+    host = f.readline()
+    indata = f.read(15)
+    print indata
+
+-----------------------------------------------------------------------------------
+
+read from file and separate as per comma
+=========================================
+host = open("/media/HDD 500/Current_Working/Dashboard-App/LocalHost_db","r")
+for line in host:
+    spl = line.split(",")
+    all = [str(each) for each in spl]
+    host, row, cell = all
+    row = unicode(row)
+    cell = unicode(cell)
+    led = unicode(dict1[host])
+    print "hai"
+    spr_client.UpdateCell(row, cell, led,spreadsheet_key, worksheet_id)
+    print sucess
+    
+-------------------------------------------------------------------------------------
+read dict and spliting 
+==========================
+print host
+    c = str(value)
+    spl = c.split(",")
+    all = [str(each) for each in spl]
+    row, cell = all
+    print row
+    print cell
+--------------------------------------------------------------------------------
+gadata configuration
+=========================
+
+email = 'mahesh@vyoma-media.in'
+password = '********'
+spreadsheet_key = '0Ap1cvRKx4murdG5uQkFuR2lpNC1lN3BCeU8xT1F5UGc'
+worksheet_id = 'od6'
+#
+spr_client = gdata.spreadsheet.service.SpreadsheetsService()
+spr_client.email = email
+spr_client.password = password
+spr_client.source = 'dev'
+spr_client.ProgrammaticLogin()
+
+----------
+error handling 
+====================
+try:
+    url = "http://59.90.236.95:8080/status/hosts/list"
+    data = urllib2.urlopen(url).read()
+    data = json.loads(data)
+except:
+        print "server busy or not responding"
+        break
+------------------------------------------------------------------------
+write 0r update to file , here for logging
+=============================================
+with open('dashboard.log','a') as f:
+            f.write( 'host not avilable on server!\n')
+            f.close()
+-------------------------------------------------------------------------
+host name dict
+===================
+'KaMarkePrsF0102':{'row':58,'col':7,'rows':46,'cols':3,'rowsec':58,'colsec':8,'rowssecs':47,'colssecs':3},
+
+'KaMarkePrsF0102': {'row':58,'col':7,'rows':46,'cols':3},
+'KaMarkePrsF0102': {'row':58,'col':8,'rows':47,'cols':3},

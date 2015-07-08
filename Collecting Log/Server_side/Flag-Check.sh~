@@ -1,0 +1,17 @@
+#!/bin/bash
+DIR='/opt/ddis/logs/'
+for host in `cat /opt/ddis/scripts/All_host_names_KA`
+do
+  if [ -d ${DIR}/${host} ]
+  then
+      if [ -f ${DIR}/${host}/collect-log ]
+      then 
+          echo "flag found in" ${host} 
+      else
+      	  echo "**flag not found in $host"
+      fi
+   else
+      echo $host "directory not found !"
+  fi
+done
+
