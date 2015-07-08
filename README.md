@@ -1,4 +1,4 @@
 client-server
 =============
 
-client server connection and exhange data.
+client/server monitoring dashboard tool. ( based on monit>mmonit)
